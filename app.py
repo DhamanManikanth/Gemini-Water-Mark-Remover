@@ -5,8 +5,10 @@ from __future__ import annotations
 from pathlib import Path
 
 import cv2
+from fastapi import FastAPI
 import gradio as gr
 import numpy as np
+import torch
 
 from automark.config import (
     DEFAULT_DILATION_PX,
@@ -46,9 +48,6 @@ def _system_status_md() -> str:
     ff_str = "OK" if (ffmpeg and ffprobe) else "**MISSING** (install FFmpeg for video)"
     pp_str = "Ready" if propainter_available() else "Not cloned (`third_party/ProPainter` missing; alpha recovery still active)"
     return f"**Device:** {gpu_str} | **FFmpeg/FFprobe:** {ff_str} | **ProPainter:** {pp_str}"
-
-
-import torch  # noqa: E402
 
 
 def _bgr_to_rgb(img: np.ndarray | None) -> np.ndarray | None:
@@ -395,6 +394,9 @@ def build_ui() -> gr.Blocks:
     return demo
 
 
+demo = build_ui()
+app = gr.mount_gradio_app(FastAPI(), demo, path="/")
+
+
 if __name__ == "__main__":
-    app = build_ui()
-    app.launch(server_name="127.0.0.1", share=False)
+    demo.launch(server_name="127.0.0.1", share=False)
