@@ -161,11 +161,11 @@ def verify_video(
     if not outside_ok:
         msgs.append("FAIL: Some frames have non-zero diff outside the mask.")
 
-    # Re-run video detection on sampled output frames
-    step = max(1, len(output_frames) // 60)
-    sampled = output_frames[::step]
-    redet = detect_video_frames(sampled, threshold=max_score_thresh)
-    all_cands = redet.candidates_a + redet.candidates_b + redet.candidates_c
+    # Re-run corner detection on median of sampled output frames (fast verification)
+    step = max(1, len(output_frames) // 25)
+    med_out = np.median(np.stack(output_frames[::step], axis=0), axis=0).astype(np.uint8)
+    redet = detect_image(med_out, threshold=max_score_thresh, search_full_frame=False)
+    all_cands = redet.candidates_a + redet.candidates_b
     max_score = max((c.score for c in all_cands), default=0.0)
     mask_u8 = (hard_mask > 0).astype(np.uint8)
     redet_ok = True

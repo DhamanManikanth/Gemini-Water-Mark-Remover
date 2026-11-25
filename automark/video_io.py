@@ -78,8 +78,8 @@ def probe_video(video_path: str | Path) -> VideoMetadata:
     )
 
 
-def sample_video_frames(video_path: str | Path, num_samples: int = 80) -> list[np.ndarray]:
-    """Evenly sample 60-100 BGR frames from `video_path`."""
+def sample_video_frames(video_path: str | Path, num_samples: int = 60) -> list[np.ndarray]:
+    """Evenly sample 60-100 BGR frames sequentially (avoids slow keyframe seeking)."""
     cap = cv2.VideoCapture(str(video_path))
     if not cap.isOpened():
         raise RuntimeError(f"Failed to open video: {video_path}")
@@ -87,12 +87,18 @@ def sample_video_frames(video_path: str | Path, num_samples: int = 80) -> list[n
     frames: list[np.ndarray] = []
     if total > 0:
         count = min(total, max(1, num_samples))
-        indices = np.linspace(0, total - 1, count, dtype=int)
-        for idx in indices:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, int(idx))
-            ok, frame = cap.read()
-            if ok and frame is not None:
+        target_set = set(np.linspace(0, total - 1, count, dtype=int).tolist())
+        idx = 0
+        while idx <= max(target_set):
+            if idx in target_set:
+                ok, frame = cap.read()
+                if not ok:
+                    break
                 frames.append(frame)
+            else:
+                if not cap.grab():
+                    break
+            idx += 1
     else:
         while True:
             ok, frame = cap.read()
@@ -151,7 +157,7 @@ def encode_video_ffmpeg(
     cmd.extend([
         "-c:v", "libx264",
         "-crf", "14",
-        "-preset", "slow",
+        "-preset", "fast",
         "-pix_fmt", meta.pix_fmt,
     ])
 

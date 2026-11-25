@@ -122,6 +122,25 @@ def propainter_available() -> bool:
     return (PROPAINTER_DIR / "model" / "propainter.py").is_file()
 
 
+def _ensure_propainter() -> None:
+    """Clone ProPainter into third_party/ProPainter on demand if missing."""
+    if propainter_available():
+        return
+    import shutil
+    import subprocess
+
+    git_bin = shutil.which("git")
+    if not git_bin:
+        raise RuntimeError(
+            "ProPainter is not installed in third_party/ProPainter and git is not available to clone it."
+        )
+    PROPAINTER_DIR.parent.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        [git_bin, "clone", "--depth", "1", "https://github.com/sczhou/ProPainter.git", str(PROPAINTER_DIR)],
+        check=True,
+    )
+
+
 def _run_propainter_chunk(
     chunk_bgr: list[np.ndarray],
     crop_mask_u8: np.ndarray,
@@ -192,12 +211,7 @@ def inpaint_video_propainter(
     if not mask_bool.any():
         return [fr.copy() for fr in frames_bgr]
 
-    if not propainter_available():
-        raise RuntimeError(
-            "ProPainter is not installed in third_party/ProPainter. "
-            "Run setup.bat (or clone https://github.com/sczhou/ProPainter.git into third_party/ProPainter) "
-            "to enable ProPainter video inpainting."
-        )
+    _ensure_propainter()
 
     device = get_device()
     vram_gb = get_vram_gb()
