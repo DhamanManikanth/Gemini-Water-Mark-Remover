@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import cv2
@@ -399,4 +400,5 @@ app = gr.mount_gradio_app(FastAPI(), demo, path="/")
 
 
 if __name__ == "__main__":
-    demo.launch(server_name="127.0.0.1", share=False)
+    host = "0.0.0.0" if os.environ.get("SPACE_ID") else "127.0.0.1"
+    demo.launch(server_name=host, share=False)
