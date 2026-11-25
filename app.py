@@ -6,7 +6,6 @@ import os
 from pathlib import Path
 
 import cv2
-from fastapi import FastAPI
 import gradio as gr
 import numpy as np
 import torch
@@ -407,8 +406,6 @@ def build_ui() -> gr.Blocks:
 
 
 demo = build_ui()
-app = gr.mount_gradio_app(FastAPI(), demo, path="/")
-
 
 if __name__ == "__main__":
     host = "0.0.0.0" if os.environ.get("SPACE_ID") else "127.0.0.1"
