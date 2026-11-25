@@ -11,6 +11,13 @@ import gradio as gr
 import numpy as np
 import torch
 
+try:
+    import spaces  # Hugging Face ZeroGPU
+    _gpu = spaces.GPU
+except ImportError:
+    def _gpu(fn=None, **_kwargs):
+        return fn if fn is not None else (lambda f: f)
+
 from automark.config import (
     DEFAULT_DILATION_PX,
     DEFAULT_FEATHER_PX,
@@ -154,6 +161,7 @@ def img_apply_paint(editor_val, dilation, feather, state):
     return _bgr_to_rgb(overlay), state, "Manual mask applied. Review overlay and click 'Run full'."
 
 
+@_gpu
 def img_run_full(feather, state):
     if state is None or state.get("bgr") is None:
         raise gr.Error("Please upload an image and detect or paint a mask first.")
@@ -232,6 +240,7 @@ def vid_apply_paint(editor_val, dilation, feather, vstate):
     return _bgr_to_rgb(render_mask_overlay(med, hard_m)), vstate, "Manual video mask applied."
 
 
+@_gpu
 def vid_test_one_frame(feather, vstate):
     if vstate is None or vstate.get("mask") is None:
         raise gr.Error("Detect or paint a video mask first.")
@@ -243,6 +252,7 @@ def vid_test_one_frame(feather, vstate):
     return _bgr_to_rgb(review_img), "One-frame test: " + " | ".join(rep.messages)
 
 
+@_gpu
 def vid_preview_3s(vstate):
     if vstate is None or vstate.get("mask") is None:
         raise gr.Error("Detect or paint a video mask first.")
@@ -251,6 +261,7 @@ def vid_preview_3s(vstate):
     return str(out_path), _bgr_to_rgb(review_img), "3s Preview: " + " | ".join(rep.messages)
 
 
+@_gpu(duration=120)
 def vid_run_full(vstate):
     if vstate is None or vstate.get("mask") is None:
         raise gr.Error("Detect or paint a video mask first.")
